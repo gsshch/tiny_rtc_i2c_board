@@ -21,11 +21,12 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <inttypes.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <compat/twi.h>
-#include "Arduino.h" // for digitalWrite
+#include <util/twi.h>
+
 
 #ifndef cbi
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
@@ -35,7 +36,6 @@
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 #endif
 
-#include "pins_arduino.h"
 #include "twi.h"
 
 static volatile uint8_t twi_state;
@@ -59,27 +59,36 @@ static volatile uint8_t twi_rxBufferIndex;
 
 static volatile uint8_t twi_error;
 
+#define SDA             PD1
+#define SCL             PD0
+
 /* 
  * Function twi_init
  * Desc     readys twi pins and sets twi bitrate
  * Input    none
  * Output   none
  */
-void twi_init(void)
+void twi_init(unsigned long f_cpu)
 {
+  uint8_t PORTD_shadow, DDRD_shadow;
+
   // initialize state
   twi_state = TWI_READY;
   twi_sendStop = true;		// default value
   twi_inRepStart = false;
   
-  // activate internal pullups for twi.
-  digitalWrite(SDA, 1);
-  digitalWrite(SCL, 1);
+  /* Activate internal pull-ups for twi SDA & SCL pins by
+   * setting them to inputs and then set their output high.
+   */
+  DDRD_shadow = DDRD;
+  DDRD = DDRD_shadow & ~(1 << DDD0 | 1 << DDD1);
+  PORTD_shadow = PORTD;
+  PORTD = PORTD_shadow | (1 << PD0 | 1 << PD1);
 
   // initialize twi prescaler and bit rate
   cbi(TWSR, TWPS0);
   cbi(TWSR, TWPS1);
-  TWBR = ((F_CPU / TWI_FREQ) - 16) / 2;
+  TWBR = ((f_cpu / TWI_FREQ) - 16) / 2;
 
   /* twi bit rate formula from atmega128 manual pg 204
   SCL Frequency = CPU Clock Frequency / (16 + (2 * TWBR))
@@ -98,12 +107,18 @@ void twi_init(void)
  */
 void twi_disable(void)
 {
+  uint8_t PORTD_shadow, DDRD_shadow;
+
   // disable twi module, acks, and twi interrupt
   TWCR &= ~(_BV(TWEN) | _BV(TWIE) | _BV(TWEA));
 
-  // deactivate internal pullups for twi.
-  digitalWrite(SDA, 0);
-  digitalWrite(SCL, 0);
+  /* Deactivate internal pull-ups for twi SDA & SCL pins by
+   * setting them to inputs and then set their output low.
+   */
+  DDRD_shadow = DDRD;
+  DDRD = DDRD_shadow & ~(1 << DDD0 | 1 << DDD1);
+  PORTD_shadow = PORTD;
+  PORTD = PORTD_shadow & ~(1 << PD0 | 1 << PD1);
 }
 
 /* 
