@@ -121,6 +121,18 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="i2c\i2c.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="i2c\twi\twi_wrapper.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="i2c\twi.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="i2c\twi.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
@@ -132,6 +144,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="i2c" />
+    <Folder Include="i2c\twi" />
     <Folder Include="uart" />
   </ItemGroup>
   <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
