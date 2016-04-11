@@ -124,13 +124,13 @@
     <Compile Include="i2c\i2c.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="i2c\twi\twi.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="i2c\twi\twi.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="i2c\twi\twi_wrapper.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="i2c\twi.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="i2c\twi.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="main.c">
