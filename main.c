@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "i2c/twi.h"
+#include "i2c/i2c.h"
 #include "uart/uart.h"
 
 #ifndef F_CPU
@@ -37,11 +37,9 @@
 #define RTC_REG_START_TIME      (uint8_t)0x00
 /* DS1307 RTC register address pointing at the internal RAM-buffer */
 #define RTC_REG_RAM_BUF_START   (uint8_t)0x08
-/* I2C driver flag bits */
+/* Memory block sizes */
 #define RTC_RAM_SIZE            (uint8_t)56     /* Bytes */
 #define EEPROM_SIZE             (uint16_t)4096   /* Bytes */
-#define I2C_WAIT                (uint8_t)1
-#define I2C_STOP_BIT            (uint8_t)1
 
 /* RTC time variable struct */
 struct rtc_time_var {
@@ -68,26 +66,21 @@ FILE mystdout = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
 
 static void rtc_init(void)
 {
-        uint8_t rtc_reg[RTC_RAM_SIZE+1];
+        uint8_t rtc_reg[RTC_RAM_SIZE];
 
         /* Clear the RTC RAM buffer */
-        rtc_reg[0] = RTC_REG_RAM_BUF_START;
-        memset(&rtc_reg[1], 0, RTC_RAM_SIZE);
-        twi_writeTo(DS1307, rtc_reg, (RTC_RAM_SIZE+1), I2C_WAIT, I2C_STOP_BIT);
+        memset(rtc_reg, 0, RTC_RAM_SIZE);
+        i2c_wr_blk(DS1307, RTC_REG_RAM_BUF_START, rtc_reg, RTC_RAM_SIZE);
 
         /* Start the RTC clock counter */
-        rtc_reg[0] = RTC_REG_START_TIME;
-        rtc_reg[1] = 0;
-        twi_writeTo(DS1307, rtc_reg, 2, I2C_WAIT, I2C_STOP_BIT);
+        i2c_wr_byte(DS1307, RTC_REG_START_TIME, 0);
 }
 
 static void rtc_get_time_var(struct rtc_time_var *var)
 {
 	uint8_t sec, min, rtc_dat[2];
 
-	rtc_dat[0] = RTC_REG_START_TIME;
-	twi_writeTo(DS1307, rtc_dat, 1, I2C_WAIT, I2C_STOP_BIT);
-	twi_readFrom(DS1307, rtc_dat, 2, I2C_STOP_BIT);
+        i2c_rd_blk(DS1307, RTC_REG_START_TIME, rtc_dat, sizeof(rtc_dat));
 	sec = rtc_dat[0];
 	min = rtc_dat[1];
 
@@ -97,52 +90,34 @@ static void rtc_get_time_var(struct rtc_time_var *var)
 	var->min_10 = ((min & 0x70) >> 4);
 }
 
-static uint8_t rtc_get_ram_buf(uint8_t *buf, uint8_t len)
+static int rtc_get_ram_buf(uint8_t *buf, uint8_t len)
 {
-        uint8_t ram_addr;
-
         if (len >= RTC_RAM_SIZE)
-                return 0;
-
-        ram_addr = RTC_REG_RAM_BUF_START;
-        twi_writeTo(DS1307, &ram_addr, 1, I2C_WAIT, I2C_STOP_BIT);
-        twi_readFrom(DS1307, buf, len, I2C_STOP_BIT);
-        return len;
+                return -1;
+        return i2c_rd_blk(DS1307, RTC_REG_RAM_BUF_START, buf, len);
 }
 
-static uint8_t rtc_set_ram_buf(uint8_t *buf, uint8_t len)
+static int rtc_set_ram_buf(uint8_t *buf, uint8_t len)
 {
-        uint8_t ram_buf[RTC_RAM_SIZE + 1];
-
         if (len >= RTC_RAM_SIZE)
-                return 0;
-
-        ram_buf[0] = RTC_REG_RAM_BUF_START;
-        strncpy((char*)&ram_buf[1], (const char *)buf, len);
-        twi_writeTo(DS1307, ram_buf, (len + 1), I2C_WAIT, I2C_STOP_BIT);
-        return len;
+                return -1;
+        return i2c_wr_blk(DS1307, RTC_REG_RAM_BUF_START, buf, len);
 }
 
-static uint8_t eeprom_get_data(uint16_t reg_idx, uint8_t *buf, uint16_t len)
+static int eeprom_get_data(uint16_t reg_idx, uint8_t *buf, uint16_t len)
 {
         if (len >= EEPROM_SIZE)
-                return 0;
-
+                return -1;
         /* TODO: add page handling */
-        twi_writeTo(AT24C32, (uint8_t *)&reg_idx, 2, I2C_WAIT, I2C_STOP_BIT);
-        twi_readFrom(AT24C32, buf, len, I2C_STOP_BIT);
-        return len;
+        return i2c_rd_idx16_blk(AT24C32, reg_idx, buf, len);
 }
 
-static uint8_t eeprom_set_data(uint16_t reg_idx, uint8_t *buf, uint8_t len)
+static int eeprom_set_data(uint16_t reg_idx, uint8_t *buf, uint8_t len)
 {
         if (len >= EEPROM_SIZE)
-        return 0;
-
+                return -1;
         /* TODO: add page handling */
-        twi_writeTo(AT24C32, (uint8_t *)&reg_idx, 2, I2C_WAIT, I2C_STOP_BIT);
-        twi_readFrom(AT24C32, buf, len, I2C_STOP_BIT);
-        return len;
+        return i2c_wr_idx16_blk(AT24C32, reg_idx, buf, len);
 }
 
 int main(void)
@@ -162,10 +137,10 @@ int main(void)
         /* Initialize UART0, serial printing over USB on Arduino Mega */
         uart0_init(MYUBRR);
 
-        /* Initialize TWI */
-        twi_init(F_CPU);
+        /* Initialize I2C */
+        i2c_init(F_CPU);
 
-        /* Enable global interrupts (used in TWI) */
+        /* Enable global interrupts (used in I2C) */
         sei();
         _delay_ms(1000);
 
