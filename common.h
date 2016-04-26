@@ -23,4 +23,7 @@
 /* TODO: Define EEPROM 7-bit slave address */
 #define AT24C32                 (uint8_t)0x50
 
+/* Un-comment to activate the ADC-EEPROM Reference Application */
+//#define APP_ADC_EEPROM
+
 #endif /* COMMON_H_ */

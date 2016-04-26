@@ -78,7 +78,14 @@ int main(void)
         uint8_t timer0_prev_sec;
         char buf[256];
 
+#ifdef APP_ADC_EEPROM
+        uint8_t adc_curr = 0;
+        uint8_t adc_prev = 0;
+        int adc_diff;
 
+        uint16_t eeprom_index = 0;
+        uint8_t eeprom_nbr_chars = 0;
+#endif
         /* Initialize UART0, serial printing over USB on Arduino Mega */
         uart0_init();
 
@@ -129,10 +136,16 @@ int main(void)
         timer0_prev_sec = g_tmr0_sec;
         /* Main loop */
         while (1) {
-                /* Dummy print upon button-press */
                 if (g_print) {
                         g_print = 0;
+#ifdef APP_ADC_EEPROM
+                        /* Read out stored EEPROM data upon button-press */
+                        eeprom_get_data(0, (uint8_t *)buf, eeprom_index);
+                        printf("Stored data[%d]:\n%s\n", eeprom_index, buf);
+#else
+                        /* Dummy print upon button-press */
                         printf("Button pressed\n");
+#endif
                 }
 
                 if (timer0_prev_sec == g_tmr0_sec)
@@ -140,12 +153,34 @@ int main(void)
                 timer0_prev_sec = g_tmr0_sec;
                 led_toggle();
                 rtc_get_time_var(&rtc);
+
+#ifdef APP_ADC_EEPROM
+                /* Poll the current ADC value to see if there is a +/-10%
+                 * deviation since the last sample.
+                 */
+                adc_curr = adc0_get_val_percentage();
+                adc_diff = adc_curr - adc_prev;
+                adc_prev = adc_curr;
+                if (adc_diff > -10 && adc_diff < 10)
+                        continue;
+
+                /* Create a char-array containing the RTC-time and the ADC
+                 * percentage value and store it in the EEPROM.
+                 */
+                eeprom_nbr_chars = snprintf(buf, 16, "%d%d:%d%d - %d%%\n",
+                                rtc.min_10, rtc.min_1, rtc.sec_10, rtc.sec_1,
+                                adc0_get_val_percentage());
+                printf("eeprom_index:%d eeprom_nbr_chars:%d %s\n",
+                                eeprom_index, eeprom_nbr_chars, buf);
+                eeprom_set_data(eeprom_index, (uint8_t *)buf, eeprom_nbr_chars);
+                eeprom_index += eeprom_nbr_chars;
+#else
+                /* Print out the ADC value and the RTC time every second */
                 printf("Elapsed RTC time - min:%d%d sec:%d%d\n",
                                 rtc.min_10, rtc.min_1, rtc.sec_10, rtc.sec_1);
-                /* Print out the ADC percentage value every second */
                 printf("Current adc_val:%d %d%%\n\n",
                                 adc0_get_val(), adc0_get_val_percentage());
-
+#endif
         }
 }
 
