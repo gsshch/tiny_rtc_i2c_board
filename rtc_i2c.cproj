@@ -139,6 +139,12 @@
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="rtc\rtc.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="rtc\rtc.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="uart\uart.c">
       <SubType>compile</SubType>
     </Compile>
@@ -149,6 +155,7 @@
   <ItemGroup>
     <Folder Include="i2c" />
     <Folder Include="i2c\twi" />
+    <Folder Include="rtc\" />
     <Folder Include="uart" />
   </ItemGroup>
   <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />

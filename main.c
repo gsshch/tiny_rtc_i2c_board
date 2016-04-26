@@ -20,67 +20,15 @@
 #include "common.h"
 #include "uart/uart.h"
 #include "i2c/i2c.h"
+#include "rtc/rtc.h"
 
-/* DS1307 RTC register for start/stop time counter */
-#define RTC_REG_START_TIME      (uint8_t)0x00
-/* DS1307 RTC register address pointing at the internal RAM-buffer */
-#define RTC_REG_RAM_BUF_START   (uint8_t)0x08
 /* Memory block sizes */
-#define RTC_RAM_SIZE            (uint8_t)56     /* Bytes */
 #define EEPROM_SIZE             (uint16_t)4096   /* Bytes */
-
-/* RTC time variable struct */
-struct rtc_time_var {
-        uint8_t sec_10;
-        uint8_t sec_1;
-        uint8_t min_10;
-        uint8_t min_1;
-};
 
 /* Dummy debug strings */
 static const char Dummy_EEPROM[] = "EEPROM_Dummy_data";
 static const char Dummy_RTC_RAM[] = "RTC_RAM_Dummy_data";
 
-
-static void rtc_init(void)
-{
-        uint8_t rtc_reg[RTC_RAM_SIZE];
-
-        /* Clear the RTC RAM buffer */
-        memset(rtc_reg, 0, RTC_RAM_SIZE);
-        i2c_wr_addr_blk(DS1307, RTC_REG_RAM_BUF_START, rtc_reg, RTC_RAM_SIZE);
-
-        /* Start the RTC clock counter */
-        i2c_wr_addr_byte(DS1307, RTC_REG_START_TIME, 0);
-}
-
-static void rtc_get_time_var(struct rtc_time_var *var)
-{
-	uint8_t sec, min, rtc_dat[2];
-
-        i2c_rd_addr_blk(DS1307, RTC_REG_START_TIME, rtc_dat, sizeof(rtc_dat));
-	sec = rtc_dat[0];
-	min = rtc_dat[1];
-
-	var->sec_1 = (sec & 0x0F);
-	var->sec_10 = ((sec & 0x70) >> 4);
-	var->min_1 = (min & 0x0F);
-	var->min_10 = ((min & 0x70) >> 4);
-}
-
-static int rtc_get_ram_buf(uint8_t *buf, uint8_t len)
-{
-        if (len >= RTC_RAM_SIZE)
-                return -1;
-        return i2c_rd_addr_blk(DS1307, RTC_REG_RAM_BUF_START, buf, len);
-}
-
-static int rtc_set_ram_buf(uint8_t *buf, uint8_t len)
-{
-        if (len >= RTC_RAM_SIZE)
-                return -1;
-        return i2c_wr_addr_blk(DS1307, RTC_REG_RAM_BUF_START, buf, len);
-}
 
 static int eeprom_get_data(uint16_t reg_idx, uint8_t *buf, uint16_t len)
 {
