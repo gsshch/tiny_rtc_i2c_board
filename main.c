@@ -27,22 +27,34 @@
 static const char Dummy_EEPROM[] = "EEPROM_Dummy_data";
 static const char Dummy_RTC_RAM[] = "RTC_RAM_Dummy_data";
 
-
-
-int main(void)
+void led_init(void)
 {
         uint8_t PORTB_shadow, DDRB_shadow;
-        struct rtc_time_var rtc;
-        char buf[256];
 
-        /* GPIO toggle-test snippet (Blinking LED on Arduino Mega) */
+        /* Blinking "keep-alive" LED on Arduino pin 13 (PB7 on Mega) */
         DDRB_shadow = DDRB;
         DDRB = DDRB_shadow | (1 << DDB7);
         PORTB_shadow = PORTB | (1 << PB7);
         PORTB = PORTB_shadow;
+}
+
+void led_toggle(void)
+{
+        /* Blink LED connected to Arduino pin 13 (PB7 on Mega) */
+        PINB = PINB | 1<<PINB7;
+}
+
+int main(void)
+{
+        struct rtc_time_var rtc;
+        char buf[256];
+
 
         /* Initialize UART0, serial printing over USB on Arduino Mega */
         uart0_init();
+
+        /* Initialize blinking LED */
+        led_init();
 
         /* Initialize I2C */
         i2c_init();
@@ -79,8 +91,7 @@ int main(void)
         /* Main loop */
         while (1) {
                 _delay_ms(1000);
-                /* Blink LED connected to Arduino pin 13 (PB7 on Mega) */
-                PINB = PINB | 1<<PINB7;
+                led_toggle();
 		rtc_get_time_var(&rtc);
 		printf("Elapsed RTC time - min:%d%d sec:%d%d\n",
 			rtc.min_10, rtc.min_1, rtc.sec_10, rtc.sec_1);
