@@ -121,6 +121,9 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="common.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="i2c\i2c.h">
       <SubType>compile</SubType>
     </Compile>

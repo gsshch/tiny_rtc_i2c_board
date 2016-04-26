@@ -10,14 +10,15 @@
 
 #include <util/twi.h>
 #include <string.h>
+#include "../../common.h"
 #include "twi.h"
 
 #define USE_BUSY_WAIT   (uint8_t)1
 #define SEND_STOP_BIT   (uint8_t)1
 
-void i2c_init(unsigned long f_cpu)
+void i2c_init(void)
 {
-        twi_init(f_cpu);
+        twi_init(F_CPU);
 }
 
 void i2c_set_clk(unsigned long f_cpu, uint32_t frequency)
