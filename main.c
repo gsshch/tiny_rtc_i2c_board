@@ -31,6 +31,8 @@ static const char Dummy_RTC_RAM[] = "RTC_RAM_Dummy_data";
 static volatile uint8_t g_tmr0_sec = 0;
 /* Timer0 ISR g_tmr0_ticker, overflow ticker */
 static volatile uint32_t g_tmr0_ticker = 0;
+/* Print flag, g_print, set in INT4 ISR to signal button pressed */
+static volatile uint8_t g_print = 0x00;
 
 void led_init(void)
 {
@@ -58,6 +60,17 @@ void timer0_init(void)
         TIMSK0 = (1 << TOIE0);  /* Enable overflow IRQ */
 }
 
+void button_init(void)
+{
+        uint8_t DDRE_shadow;
+
+        /* Configure Arduino Mega Pin 2 as IRQ (PE4, INT4) */
+        DDRE_shadow = DDRE;
+        DDRE = DDRE_shadow & ~(1 << DDE4);      /* PE4 input */
+        EICRB |= (1 << ISC41) | (1 << ISC40);   /* IRQ on rising edge */
+        EIMSK |= (1 << INT4);                   /* Activate INT4 IRQ */
+}
+
 int main(void)
 {
         struct rtc_time_var rtc;
@@ -76,6 +89,9 @@ int main(void)
 
         /* Initialize Timer0 */
         timer0_init();
+
+        /* Initialize INT4 button */
+        button_init();
 
         /* Enable global interrupts (used in I2C) */
         sei();
@@ -109,6 +125,12 @@ int main(void)
         timer0_prev_sec = g_tmr0_sec;
         /* Main loop */
         while (1) {
+                /* Dummy print upon button-press */
+                if (g_print) {
+                        g_print = 0;
+                        printf("Button pressed\n");
+                }
+
                 if (timer0_prev_sec == g_tmr0_sec)
                         continue;
                 timer0_prev_sec = g_tmr0_sec;
@@ -124,4 +146,16 @@ ISR(TIMER0_OVF_vect)
         g_tmr0_ticker++;
         if (g_tmr0_ticker % 70 == 0)
                 g_tmr0_sec++;
+}
+
+ISR(INT4_vect)
+{
+        static uint32_t tmr0_tck_track = 0;
+
+        /* A simple de-bounce handler where all new IRQs shorter than
+         * ~300ms (20/70 * 1 sec) are discarded.
+         */
+        if (tmr0_tck_track < g_tmr0_ticker)
+                g_print = 0x01;
+        tmr0_tck_track = g_tmr0_ticker + 20;
 }
