@@ -21,36 +21,19 @@
 #include "uart/uart.h"
 #include "i2c/i2c.h"
 #include "rtc/rtc.h"
-
-/* Memory block sizes */
-#define EEPROM_SIZE             (uint16_t)4096   /* Bytes */
+#include "eeprom/eeprom.h"
 
 /* Dummy debug strings */
 static const char Dummy_EEPROM[] = "EEPROM_Dummy_data";
 static const char Dummy_RTC_RAM[] = "RTC_RAM_Dummy_data";
 
 
-static int eeprom_get_data(uint16_t reg_idx, uint8_t *buf, uint16_t len)
-{
-        if (len >= EEPROM_SIZE)
-                return -1;
-        /* TODO: add page handling */
-        return i2c_rd_addr16_blk(AT24C32, reg_idx, buf, len);
-}
-
-static int eeprom_set_data(uint16_t reg_idx, uint8_t *buf, uint8_t len)
-{
-        if (len >= EEPROM_SIZE)
-                return -1;
-        /* TODO: add page handling */
-        return i2c_wr_addr16_blk(AT24C32, reg_idx, buf, len);
-}
 
 int main(void)
 {
         uint8_t PORTB_shadow, DDRB_shadow;
         struct rtc_time_var rtc;
-        uint8_t i2c_buf[32];
+        char buf[256];
 
         /* GPIO toggle-test snippet (Blinking LED on Arduino Mega) */
         DDRB_shadow = DDRB;
@@ -66,25 +49,32 @@ int main(void)
 
         /* Enable global interrupts (used in I2C) */
         sei();
+
+        /* Added startup delay after IRQ-enable and followed by a boot print */
         _delay_ms(1000);
-
-        rtc_init();
-        /* Write some dummy data to the RTC RAM & the EEPROM */
-        rtc_set_ram_buf((uint8_t *)Dummy_RTC_RAM, strlen(Dummy_RTC_RAM));
-        eeprom_set_data(0x0000, (uint8_t *)Dummy_EEPROM, strlen(Dummy_EEPROM));
-
-        /* Print the 7-bit I2C-client addresses */
+        printf("\n\nTiny RTC firmware successfully started!\n\n");
         printf("RTC DS1307 I2C-addr:0x%x\n", DS1307);
         printf("EEPROM AT24C32 I2C-addr:0x%x\n\n", AT24C32);
+
+        rtc_init();
+
+        /* Write dummy data to the RTC RAM */
+        rtc_set_ram_buf((uint8_t *)Dummy_RTC_RAM, strlen(Dummy_RTC_RAM));
+
+        /* Write dummy data to the EEPROM */
+        eeprom_set_data(0, (uint8_t *)Dummy_EEPROM, strlen(Dummy_EEPROM));
+
         _delay_ms(1000);
 
-        /* Read the Dummy data from RTC RAM & the EEPROM and print it */
-        memset(i2c_buf, 0, sizeof(i2c_buf));
-        rtc_get_ram_buf(i2c_buf, strlen(Dummy_RTC_RAM));
-        printf("RTC RAM read result:%s\n", i2c_buf);
-        memset(i2c_buf, 0, sizeof(i2c_buf));
-        eeprom_get_data(0x0000, i2c_buf, strlen(Dummy_EEPROM));
-        printf("EEPROM read result:%s\n\n", i2c_buf);
+        /* Read and print dummy data from RTC RAM  */
+        memset(buf, 0, sizeof(buf));
+        rtc_get_ram_buf((uint8_t *)buf, strlen(Dummy_RTC_RAM));
+        printf("RTC RAM read result:%s\n", buf);
+
+        /* Read and print dummy data from EEPROM  */
+        memset(buf, 0, sizeof(buf));
+        eeprom_get_data(0, (uint8_t *)buf, strlen(Dummy_EEPROM));
+        printf("EEPROM read result:%s\n\n", buf);
 
         /* Main loop */
         while (1) {

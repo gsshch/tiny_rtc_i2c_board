@@ -124,6 +124,12 @@
     <Compile Include="common.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="eeprom\eeprom.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="eeprom\eeprom.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="i2c\i2c.h">
       <SubType>compile</SubType>
     </Compile>
@@ -153,6 +159,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="eeprom\" />
     <Folder Include="i2c" />
     <Folder Include="i2c\twi" />
     <Folder Include="rtc\" />
