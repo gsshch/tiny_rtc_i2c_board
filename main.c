@@ -48,17 +48,17 @@ static void rtc_init(void)
 
         /* Clear the RTC RAM buffer */
         memset(rtc_reg, 0, RTC_RAM_SIZE);
-        i2c_wr_blk(DS1307, RTC_REG_RAM_BUF_START, rtc_reg, RTC_RAM_SIZE);
+        i2c_wr_addr_blk(DS1307, RTC_REG_RAM_BUF_START, rtc_reg, RTC_RAM_SIZE);
 
         /* Start the RTC clock counter */
-        i2c_wr_byte(DS1307, RTC_REG_START_TIME, 0);
+        i2c_wr_addr_byte(DS1307, RTC_REG_START_TIME, 0);
 }
 
 static void rtc_get_time_var(struct rtc_time_var *var)
 {
 	uint8_t sec, min, rtc_dat[2];
 
-        i2c_rd_blk(DS1307, RTC_REG_START_TIME, rtc_dat, sizeof(rtc_dat));
+        i2c_rd_addr_blk(DS1307, RTC_REG_START_TIME, rtc_dat, sizeof(rtc_dat));
 	sec = rtc_dat[0];
 	min = rtc_dat[1];
 
@@ -72,14 +72,14 @@ static int rtc_get_ram_buf(uint8_t *buf, uint8_t len)
 {
         if (len >= RTC_RAM_SIZE)
                 return -1;
-        return i2c_rd_blk(DS1307, RTC_REG_RAM_BUF_START, buf, len);
+        return i2c_rd_addr_blk(DS1307, RTC_REG_RAM_BUF_START, buf, len);
 }
 
 static int rtc_set_ram_buf(uint8_t *buf, uint8_t len)
 {
         if (len >= RTC_RAM_SIZE)
                 return -1;
-        return i2c_wr_blk(DS1307, RTC_REG_RAM_BUF_START, buf, len);
+        return i2c_wr_addr_blk(DS1307, RTC_REG_RAM_BUF_START, buf, len);
 }
 
 static int eeprom_get_data(uint16_t reg_idx, uint8_t *buf, uint16_t len)
@@ -87,7 +87,7 @@ static int eeprom_get_data(uint16_t reg_idx, uint8_t *buf, uint16_t len)
         if (len >= EEPROM_SIZE)
                 return -1;
         /* TODO: add page handling */
-        return i2c_rd_idx16_blk(AT24C32, reg_idx, buf, len);
+        return i2c_rd_addr16_blk(AT24C32, reg_idx, buf, len);
 }
 
 static int eeprom_set_data(uint16_t reg_idx, uint8_t *buf, uint8_t len)
@@ -95,7 +95,7 @@ static int eeprom_set_data(uint16_t reg_idx, uint8_t *buf, uint8_t len)
         if (len >= EEPROM_SIZE)
                 return -1;
         /* TODO: add page handling */
-        return i2c_wr_idx16_blk(AT24C32, reg_idx, buf, len);
+        return i2c_wr_addr16_blk(AT24C32, reg_idx, buf, len);
 }
 
 int main(void)
