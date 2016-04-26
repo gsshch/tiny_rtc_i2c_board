@@ -121,6 +121,12 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="adc\adc.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="adc\adc.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="common.h">
       <SubType>compile</SubType>
     </Compile>
@@ -159,6 +165,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="adc\" />
     <Folder Include="eeprom\" />
     <Folder Include="i2c" />
     <Folder Include="i2c\twi" />

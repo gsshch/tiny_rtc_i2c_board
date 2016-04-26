@@ -22,6 +22,7 @@
 #include "i2c/i2c.h"
 #include "rtc/rtc.h"
 #include "eeprom/eeprom.h"
+#include "adc/adc.h"
 
 /* Dummy debug strings */
 static const char Dummy_EEPROM[] = "EEPROM_Dummy_data";
@@ -93,6 +94,9 @@ int main(void)
         /* Initialize INT4 button */
         button_init();
 
+        /* Initialize ADC */
+        adc0_init();
+
         /* Enable global interrupts (used in I2C) */
         sei();
 
@@ -135,9 +139,13 @@ int main(void)
                         continue;
                 timer0_prev_sec = g_tmr0_sec;
                 led_toggle();
-		rtc_get_time_var(&rtc);
-		printf("Elapsed RTC time - min:%d%d sec:%d%d\n",
-			rtc.min_10, rtc.min_1, rtc.sec_10, rtc.sec_1);
+                rtc_get_time_var(&rtc);
+                printf("Elapsed RTC time - min:%d%d sec:%d%d\n",
+                                rtc.min_10, rtc.min_1, rtc.sec_10, rtc.sec_1);
+                /* Print out the ADC percentage value every second */
+                printf("Current adc_val:%d %d%%\n\n",
+                                adc0_get_val(), adc0_get_val_percentage());
+
         }
 }
 
